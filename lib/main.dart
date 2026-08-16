@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import 'models/subscription.dart';
 import 'db/database_helper.dart';
 import 'theme/app_theme.dart';
 import 'widgets/subscription_card.dart';
 import 'widgets/summary_card.dart';
+import 'screens/add_subscription_screen.dart';
 
 void main() {
   runApp(const TrimItApp());
@@ -46,17 +46,16 @@ class _TestScreenState extends State<TestScreen> {
     });
   }
 
-  Future<void> _addSampleSubscription() async {
-    final sample = Subscription(
-      id: const Uuid().v4(),
-      name: 'Netflix',
-      cost: 15.99,
-      cycle: BillingCycle.monthly,
-      category: 'Streaming',
-      nextRenewal: DateTime.now().add(const Duration(days: 20)),
+  Future<void> _openAddScreen() async {
+    // Navigates to the form screen and waits for it to close.
+    // If it closed with "true" (meaning something was saved), we reload the list.
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddSubscriptionScreen()),
     );
-    await DatabaseHelper.instance.insertSubscription(sample);
-    _loadSubscriptions();
+    if (result == true) {
+      _loadSubscriptions();
+    }
   }
 
   double get _totalMonthly {
@@ -87,7 +86,7 @@ class _TestScreenState extends State<TestScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addSampleSubscription,
+        onPressed: _openAddScreen,
         child: const Icon(Icons.add),
       ),
     );

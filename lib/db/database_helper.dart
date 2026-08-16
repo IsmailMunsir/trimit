@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/subscription.dart';
+import '../models/user.dart';
 
 class DatabaseHelper {
   DatabaseHelper._internal();
@@ -29,6 +30,15 @@ class DatabaseHelper {
             cycle INTEGER NOT NULL,
             category TEXT NOT NULL,
             nextRenewal TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE users (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            passwordHash TEXT NOT NULL,
+            emailVerified INTEGER NOT NULL
           )
         ''');
       },
@@ -78,5 +88,24 @@ class DatabaseHelper {
   Future<void> deleteSubscription(String id) async {
     final db = await database;
     await db.delete('subscriptions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---- User / authentication methods ----
+
+  Future<void> insertUser(User user) async {
+    final db = await database;
+    await db.insert('users', user.toMap());
+  }
+
+  Future<User?> getUserByEmail(String email) async {
+    final db = await database;
+    final rows = await db.query('users', where: 'email = ?', whereArgs: [email]);
+    if (rows.isEmpty) return null;
+    return User.fromMap(rows.first);
+  }
+
+  Future<void> updateUser(User user) async {
+    final db = await database;
+    await db.update('users', user.toMap(), where: 'id = ?', whereArgs: [user.id]);
   }
 }

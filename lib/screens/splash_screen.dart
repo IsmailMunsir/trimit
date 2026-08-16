@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../main.dart';
+import 'onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,18 +15,21 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateAfterDelay();
+    _decideNextScreen();
   }
 
-  Future<void> _navigateAfterDelay() async {
-    // Give the splash screen a moment to show, and let the provider
-    // start loading subscriptions in the background at the same time.
+  Future<void> _decideNextScreen() async {
     await Future.delayed(const Duration(milliseconds: 1400));
+
+    final prefs = await SharedPreferences.getInstance();
+    final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
 
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const TestScreen()),
+      MaterialPageRoute(
+        builder: (context) => onboardingComplete ? const TestScreen() : const OnboardingScreen(),
+      ),
     );
   }
 

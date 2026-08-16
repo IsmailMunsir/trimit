@@ -7,6 +7,7 @@ import 'widgets/subscription_card.dart';
 import 'widgets/summary_card.dart';
 import 'screens/add_subscription_screen.dart';
 import 'screens/subscription_detail_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
   runApp(const TrimItApp());
@@ -24,7 +25,7 @@ class TrimItApp extends StatelessWidget {
       child: MaterialApp(
         title: 'TrimIt',
         theme: AppTheme.light(),
-        home: const TestScreen(),
+        home: const SplashScreen(),
       ),
     );
   }

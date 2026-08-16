@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'models/subscription.dart';
 import 'db/database_helper.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const TrimItApp());
@@ -14,6 +15,7 @@ class TrimItApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TrimIt',
+      theme: AppTheme.light(),
       home: const TestScreen(),
     );
   }

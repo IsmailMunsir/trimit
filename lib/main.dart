@@ -5,6 +5,7 @@ import 'theme/app_theme.dart';
 import 'widgets/subscription_card.dart';
 import 'widgets/summary_card.dart';
 import 'screens/add_subscription_screen.dart';
+import 'screens/subscription_detail_screen.dart';
 
 void main() {
   runApp(const TrimItApp());
@@ -47,11 +48,19 @@ class _TestScreenState extends State<TestScreen> {
   }
 
   Future<void> _openAddScreen() async {
-    // Navigates to the form screen and waits for it to close.
-    // If it closed with "true" (meaning something was saved), we reload the list.
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddSubscriptionScreen()),
+    );
+    if (result == true) {
+      _loadSubscriptions();
+    }
+  }
+
+  Future<void> _openDetailScreen(Subscription s) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SubscriptionDetailScreen(subscription: s)),
     );
     if (result == true) {
       _loadSubscriptions();
@@ -82,7 +91,10 @@ class _TestScreenState extends State<TestScreen> {
               child: Center(child: Text('No subscriptions saved yet')),
             )
           else
-            ..._subscriptions.map((s) => SubscriptionCard(subscription: s)),
+            ..._subscriptions.map((s) => SubscriptionCard(
+                  subscription: s,
+                  onTap: () => _openDetailScreen(s),
+                )),
         ],
       ),
       floatingActionButton: FloatingActionButton(

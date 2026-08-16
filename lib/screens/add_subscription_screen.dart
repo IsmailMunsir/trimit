@@ -4,7 +4,9 @@ import '../models/subscription.dart';
 import '../db/database_helper.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
-  const AddSubscriptionScreen({super.key});
+  final Subscription? existing; // null when adding new, non-null when editing
+
+  const AddSubscriptionScreen({super.key, this.existing});
 
   @override
   State<AddSubscriptionScreen> createState() => _AddSubscriptionScreenState();
@@ -12,16 +14,30 @@ class AddSubscriptionScreen extends StatefulWidget {
 
 class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _costController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _costController;
 
-  BillingCycle _selectedCycle = BillingCycle.monthly;
-  String _selectedCategory = kCategories.first;
-  DateTime _nextRenewal = DateTime.now().add(const Duration(days: 30));
+  late BillingCycle _selectedCycle;
+  late String _selectedCategory;
+  late DateTime _nextRenewal;
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _nameController = TextEditingController(text: existing?.name ?? '');
+    _costController = TextEditingController(
+      text: existing != null ? existing.cost.toStringAsFixed(2) : '',
+    );
+    _selectedCycle = existing?.cycle ?? BillingCycle.monthly;
+    _selectedCategory = existing?.category ?? kCategories.first;
+    _nextRenewal = existing?.nextRenewal ?? DateTime.now().add(const Duration(days: 30));
+  }
 
   @override
   void dispose() {
-    // Always clean up text controllers when the screen closes, to avoid memory leaks.
     _nameController.dispose();
     _costController.dispose();
     super.dispose();
@@ -32,7 +48,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       context: context,
       initialDate: _nextRenewal,
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 1095)), // ~3 years ahead
+      lastDate: DateTime.now().add(const Duration(days: 1095)),
     );
     if (picked != null) {
       setState(() => _nextRenewal = picked);
@@ -40,12 +56,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   }
 
   Future<void> _save() async {
-    // Runs all the validator functions attached to the form fields below.
-    // If any of them return an error message, this returns false and we stop.
     if (!_formKey.currentState!.validate()) return;
 
-    final newSubscription = Subscription(
-      id: const Uuid().v4(),
+    final subscription = Subscription(
+      id: widget.existing?.id ?? const Uuid().v4(),
       name: _nameController.text.trim(),
       cost: double.parse(_costController.text.trim()),
       cycle: _selectedCycle,
@@ -53,17 +67,17 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       nextRenewal: _nextRenewal,
     );
 
-    await DatabaseHelper.instance.insertSubscription(newSubscription);
+    await DatabaseHelper.instance.insertSubscription(subscription);
 
     if (mounted) {
-      Navigator.pop(context, true); // true tells the previous screen "something changed, refresh"
+      Navigator.pop(context, true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Subscription')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Subscription' : 'Add Subscription')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -122,7 +136,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             FilledButton(
               onPressed: _save,
               style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-              child: const Text('Save Subscription'),
+              child: Text(_isEditing ? 'Save Changes' : 'Save Subscription'),
             ),
           ],
         ),

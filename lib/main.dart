@@ -3,6 +3,8 @@ import 'package:uuid/uuid.dart';
 import 'models/subscription.dart';
 import 'db/database_helper.dart';
 import 'theme/app_theme.dart';
+import 'widgets/subscription_card.dart';
+import 'widgets/summary_card.dart';
 
 void main() {
   runApp(const TrimItApp());
@@ -57,22 +59,33 @@ class _TestScreenState extends State<TestScreen> {
     _loadSubscriptions();
   }
 
+  double get _totalMonthly {
+    return _subscriptions.fold(0.0, (sum, s) => sum + s.monthlyCost);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('TrimIt - Database Test')),
-      body: _subscriptions.isEmpty
-          ? const Center(child: Text('No subscriptions saved yet'))
-          : ListView.builder(
-              itemCount: _subscriptions.length,
-              itemBuilder: (context, index) {
-                final s = _subscriptions[index];
-                return ListTile(
-                  title: Text(s.name),
-                  subtitle: Text('\$${s.cost} / ${s.cycle.name}'),
-                );
-              },
-            ),
+      appBar: AppBar(title: const Text('TrimIt')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          SummaryCard(totalMonthly: _totalMonthly),
+          const SizedBox(height: 20),
+          const Text(
+            'Your subscriptions',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+          ),
+          const SizedBox(height: 8),
+          if (_subscriptions.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 30),
+              child: Center(child: Text('No subscriptions saved yet')),
+            )
+          else
+            ..._subscriptions.map((s) => SubscriptionCard(subscription: s)),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addSampleSubscription,
         child: const Icon(Icons.add),

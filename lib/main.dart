@@ -8,6 +8,8 @@ import 'widgets/summary_card.dart';
 import 'screens/add_subscription_screen.dart';
 import 'screens/subscription_detail_screen.dart';
 import 'screens/splash_screen.dart';
+import 'providers/auth_provider.dart';
+import 'screens/auth/login_screen.dart';
 
 void main() {
   runApp(const TrimItApp());
@@ -18,10 +20,11 @@ class TrimItApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      // Created once, here, at the top of the app — every screen below
-      // this point in the widget tree can now access SubscriptionProvider.
-      create: (context) => SubscriptionProvider()..loadSubscriptions(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => SubscriptionProvider()..loadSubscriptions()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+      ],
       child: MaterialApp(
         title: 'TrimIt',
         theme: AppTheme.light(),
@@ -56,7 +59,18 @@ class TestScreen extends StatelessWidget {
     final provider = context.watch<SubscriptionProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('TrimIt')),
+      appBar: AppBar(
+        title: const Text('TrimIt'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.login),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            ),
+          ),
+        ],
+      ),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(

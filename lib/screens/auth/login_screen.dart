@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../main.dart';
+import '../main_shell.dart';
 import 'create_account_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -45,9 +45,9 @@ Future<void> _submit() async {
 
       if (success) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const TestScreen()),
-          (route) => false,
-        );
+        MaterialPageRoute(builder: (context) => const MainShell()),
+        (route) => false,
+      );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(auth.lastError ?? 'Something went wrong.')),

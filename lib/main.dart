@@ -35,8 +35,8 @@ class TrimItApp extends StatelessWidget {
   }
 }
 
-class TestScreen extends StatelessWidget {
-  const TestScreen({super.key});
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   Future<void> _openAddScreen(BuildContext context) async {
     await Navigator.push(

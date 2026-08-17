@@ -10,6 +10,7 @@ import 'screens/subscription_detail_screen.dart';
 import 'screens/splash_screen.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/profile_screen.dart';
 
 void main() {
   runApp(const TrimItApp());
@@ -62,12 +63,25 @@ class TestScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('TrimIt'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.login),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              if (auth.isLoggedIn) {
+                return IconButton(
+                  icon: const Icon(Icons.person_outline),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  ),
+                );
+              }
+              return IconButton(
+                icon: const Icon(Icons.login),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                ),
+              );
+            },
           ),
         ],
       ),

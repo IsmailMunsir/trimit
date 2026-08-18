@@ -20,7 +20,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'trimit.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2, // bumped from 1 — triggers onUpgrade for existing installs
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE subscriptions (
@@ -29,7 +29,14 @@ class DatabaseHelper {
             cost REAL NOT NULL,
             cycle INTEGER NOT NULL,
             category TEXT NOT NULL,
-            nextRenewal TEXT NOT NULL
+            nextRenewal TEXT NOT NULL,
+            colorValue INTEGER NOT NULL DEFAULT ${0xFF3D5AFE},
+            isTrial INTEGER NOT NULL DEFAULT 0,
+            trialEndDate TEXT,
+            paymentMethod TEXT,
+            notes TEXT,
+            reminderEnabled INTEGER NOT NULL DEFAULT 1,
+            reminderDaysBefore INTEGER NOT NULL DEFAULT 2
           )
         ''');
         await db.execute('''
@@ -42,23 +49,40 @@ class DatabaseHelper {
           )
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Adds the new columns to anyone who already has version 1 installed,
+        // so their existing subscriptions are preserved rather than wiped.
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN colorValue INTEGER NOT NULL DEFAULT ${0xFF3D5AFE}');
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN isTrial INTEGER NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN trialEndDate TEXT');
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN paymentMethod TEXT');
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN notes TEXT');
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 1');
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN reminderDaysBefore INTEGER NOT NULL DEFAULT 2');
+        }
+      },
     );
   }
 
-  // Converts a Subscription object into a plain Map (key-value pairs),
-  // which is the format sqflite needs for saving to the database.
   Map<String, dynamic> _toMap(Subscription s) {
     return {
       'id': s.id,
       'name': s.name,
       'cost': s.cost,
-      'cycle': s.cycle.index, // enums are stored as their position number (0, 1, 2)
+      'cycle': s.cycle.index,
       'category': s.category,
-      'nextRenewal': s.nextRenewal.toIso8601String(), // dates stored as text
+      'nextRenewal': s.nextRenewal.toIso8601String(),
+      'colorValue': s.colorValue,
+      'isTrial': s.isTrial ? 1 : 0,
+      'trialEndDate': s.trialEndDate?.toIso8601String(),
+      'paymentMethod': s.paymentMethod,
+      'notes': s.notes,
+      'reminderEnabled': s.reminderEnabled ? 1 : 0,
+      'reminderDaysBefore': s.reminderDaysBefore,
     };
   }
 
-  // Converts a row back from the database into a real Subscription object.
   Subscription _fromMap(Map<String, dynamic> map) {
     return Subscription(
       id: map['id'] as String,
@@ -67,6 +91,13 @@ class DatabaseHelper {
       cycle: BillingCycle.values[map['cycle'] as int],
       category: map['category'] as String,
       nextRenewal: DateTime.parse(map['nextRenewal'] as String),
+      colorValue: map['colorValue'] as int? ?? 0xFF3D5AFE,
+      isTrial: (map['isTrial'] as int? ?? 0) == 1,
+      trialEndDate: map['trialEndDate'] != null ? DateTime.parse(map['trialEndDate'] as String) : null,
+      paymentMethod: map['paymentMethod'] as String?,
+      notes: map['notes'] as String?,
+      reminderEnabled: (map['reminderEnabled'] as int? ?? 1) == 1,
+      reminderDaysBefore: map['reminderDaysBefore'] as int? ?? 2,
     );
   }
 

@@ -7,6 +7,13 @@ class Subscription {
   final BillingCycle cycle;
   final String category;
   final DateTime nextRenewal;
+  final int colorValue; // stored as an int so it can be saved to the database
+  final bool isTrial;
+  final DateTime? trialEndDate;
+  final String? paymentMethod;
+  final String? notes;
+  final bool reminderEnabled;
+  final int reminderDaysBefore;
 
   Subscription({
     required this.id,
@@ -15,6 +22,13 @@ class Subscription {
     required this.cycle,
     required this.category,
     required this.nextRenewal,
+    this.colorValue = 0xFF3D5AFE, // default brand blue if none chosen
+    this.isTrial = false,
+    this.trialEndDate,
+    this.paymentMethod,
+    this.notes,
+    this.reminderEnabled = true,
+    this.reminderDaysBefore = 2,
   });
 
   /// Converts any billing cycle into an equivalent monthly cost,
@@ -29,6 +43,37 @@ class Subscription {
         return cost / 12;
     }
   }
+
+  Subscription copyWith({
+    String? name,
+    double? cost,
+    BillingCycle? cycle,
+    String? category,
+    DateTime? nextRenewal,
+    int? colorValue,
+    bool? isTrial,
+    DateTime? trialEndDate,
+    String? paymentMethod,
+    String? notes,
+    bool? reminderEnabled,
+    int? reminderDaysBefore,
+  }) {
+    return Subscription(
+      id: id,
+      name: name ?? this.name,
+      cost: cost ?? this.cost,
+      cycle: cycle ?? this.cycle,
+      category: category ?? this.category,
+      nextRenewal: nextRenewal ?? this.nextRenewal,
+      colorValue: colorValue ?? this.colorValue,
+      isTrial: isTrial ?? this.isTrial,
+      trialEndDate: trialEndDate ?? this.trialEndDate,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      notes: notes ?? this.notes,
+      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
+    );
+  }
 }
 
 const List<String> kCategories = [
@@ -38,4 +83,16 @@ const List<String> kCategories = [
   'Gaming',
   'Fitness',
   'Other',
+];
+
+/// A small curated palette for the subscription "logo" color picker.
+const List<int> kAvatarColors = [
+  0xFF3D5AFE, // blue
+  0xFFE53935, // red
+  0xFF43A047, // green
+  0xFFFF6D00, // orange
+  0xFF8E24AA, // purple
+  0xFF00ACC1, // teal
+  0xFFFDD835, // yellow
+  0xFF6D4C41, // brown
 ];

@@ -1,5 +1,7 @@
 enum BillingCycle { weekly, monthly, yearly }
 
+enum SubscriptionStatus { active, trial, paused, cancelled }
+
 class Subscription {
   final String id;
   final String name;
@@ -13,6 +15,9 @@ class Subscription {
   final String? notes;
   final bool reminderEnabled;
   final int reminderDaysBefore;
+  final SubscriptionStatus status;
+  final bool isFavorite;
+  final bool isArchived;
 
   Subscription({
     required this.id,
@@ -27,6 +32,9 @@ class Subscription {
     this.notes,
     this.reminderEnabled = true,
     this.reminderDaysBefore = 2,
+    this.status = SubscriptionStatus.active,
+    this.isFavorite = false,
+    this.isArchived = false,
   });
 
   /// Converts any billing cycle into an equivalent monthly cost,
@@ -54,6 +62,9 @@ class Subscription {
     String? notes,
     bool? reminderEnabled,
     int? reminderDaysBefore,
+    SubscriptionStatus? status,
+    bool? isFavorite,
+    bool? isArchived,
   }) {
     return Subscription(
       id: id,
@@ -68,6 +79,9 @@ class Subscription {
       notes: notes ?? this.notes,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
+      status: status ?? this.status,
+      isFavorite: isFavorite ?? this.isFavorite,
+      isArchived: isArchived ?? this.isArchived,
     );
   }
 }

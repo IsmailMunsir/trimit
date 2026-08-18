@@ -20,7 +20,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'trimit.db');
     return openDatabase(
       path,
-      version: 2,
+      version: 3, // bumped from 2 — adds status, isFavorite, isArchived
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE subscriptions (
@@ -35,7 +35,10 @@ class DatabaseHelper {
             trialEndDate TEXT,
             notes TEXT,
             reminderEnabled INTEGER NOT NULL DEFAULT 1,
-            reminderDaysBefore INTEGER NOT NULL DEFAULT 2
+            reminderDaysBefore INTEGER NOT NULL DEFAULT 2,
+            status INTEGER NOT NULL DEFAULT 0,
+            isFavorite INTEGER NOT NULL DEFAULT 0,
+            isArchived INTEGER NOT NULL DEFAULT 0
           )
         ''');
         await db.execute('''
@@ -49,11 +52,6 @@ class DatabaseHelper {
         ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // Adds the new columns to anyone who already has version 1 installed,
-        // so their existing subscriptions are preserved rather than wiped.
-        // Note: paymentMethod is intentionally NOT added here anymore — the
-        // feature was removed. Any device that already has that column from
-        // an earlier test build just keeps it, unused; it's harmless.
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE subscriptions ADD COLUMN colorValue INTEGER NOT NULL DEFAULT ${0xFF3D5AFE}');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN isTrial INTEGER NOT NULL DEFAULT 0');
@@ -61,6 +59,11 @@ class DatabaseHelper {
           await db.execute('ALTER TABLE subscriptions ADD COLUMN notes TEXT');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 1');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN reminderDaysBefore INTEGER NOT NULL DEFAULT 2');
+        }
+        if (oldVersion < 3) {
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN status INTEGER NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN isFavorite INTEGER NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0');
         }
       },
     );
@@ -80,6 +83,9 @@ class DatabaseHelper {
       'notes': s.notes,
       'reminderEnabled': s.reminderEnabled ? 1 : 0,
       'reminderDaysBefore': s.reminderDaysBefore,
+      'status': s.status.index,
+      'isFavorite': s.isFavorite ? 1 : 0,
+      'isArchived': s.isArchived ? 1 : 0,
     };
   }
 
@@ -97,6 +103,9 @@ class DatabaseHelper {
       notes: map['notes'] as String?,
       reminderEnabled: (map['reminderEnabled'] as int? ?? 1) == 1,
       reminderDaysBefore: map['reminderDaysBefore'] as int? ?? 2,
+      status: SubscriptionStatus.values[map['status'] as int? ?? 0],
+      isFavorite: (map['isFavorite'] as int? ?? 0) == 1,
+      isArchived: (map['isArchived'] as int? ?? 0) == 1,
     );
   }
 

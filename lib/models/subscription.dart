@@ -10,7 +10,6 @@ class Subscription {
   final int colorValue; // stored as an int so it can be saved to the database
   final bool isTrial;
   final DateTime? trialEndDate;
-  final String? paymentMethod;
   final String? notes;
   final bool reminderEnabled;
   final int reminderDaysBefore;
@@ -25,7 +24,6 @@ class Subscription {
     this.colorValue = 0xFF3D5AFE, // default brand blue if none chosen
     this.isTrial = false,
     this.trialEndDate,
-    this.paymentMethod,
     this.notes,
     this.reminderEnabled = true,
     this.reminderDaysBefore = 2,
@@ -53,7 +51,6 @@ class Subscription {
     int? colorValue,
     bool? isTrial,
     DateTime? trialEndDate,
-    String? paymentMethod,
     String? notes,
     bool? reminderEnabled,
     int? reminderDaysBefore,
@@ -68,7 +65,6 @@ class Subscription {
       colorValue: colorValue ?? this.colorValue,
       isTrial: isTrial ?? this.isTrial,
       trialEndDate: trialEndDate ?? this.trialEndDate,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
       notes: notes ?? this.notes,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,

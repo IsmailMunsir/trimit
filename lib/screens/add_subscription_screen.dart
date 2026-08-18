@@ -17,10 +17,16 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _costController;
+  late final TextEditingController _notesController;
 
   late BillingCycle _selectedCycle;
   late String _selectedCategory;
   late DateTime _nextRenewal;
+  late int _selectedColor;
+  late bool _isTrial;
+  DateTime? _trialEndDate;
+  late bool _reminderEnabled;
+  late int _reminderDaysBefore;
   bool _isSaving = false;
 
   bool get _isEditing => widget.existing != null;
@@ -33,15 +39,22 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     _costController = TextEditingController(
       text: existing != null ? existing.cost.toStringAsFixed(2) : '',
     );
+    _notesController = TextEditingController(text: existing?.notes ?? '');
     _selectedCycle = existing?.cycle ?? BillingCycle.monthly;
     _selectedCategory = existing?.category ?? kCategories.first;
     _nextRenewal = existing?.nextRenewal ?? DateTime.now().add(const Duration(days: 30));
+    _selectedColor = existing?.colorValue ?? kAvatarColors.first;
+    _isTrial = existing?.isTrial ?? false;
+    _trialEndDate = existing?.trialEndDate;
+    _reminderEnabled = existing?.reminderEnabled ?? true;
+    _reminderDaysBefore = existing?.reminderDaysBefore ?? 2;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _costController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -52,10 +65,21 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 1095)),
     );
-    if (picked != null) {
-      setState(() => _nextRenewal = picked);
-    }
+    if (picked != null) setState(() => _nextRenewal = picked);
   }
+
+  Future<void> _pickTrialEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _trialEndDate ?? DateTime.now().add(const Duration(days: 7)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _trialEndDate = picked);
+  }
+
+  String _formatDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -71,18 +95,20 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       cycle: _selectedCycle,
       category: _selectedCategory,
       nextRenewal: _nextRenewal,
+      colorValue: _selectedColor,
+      isTrial: _isTrial,
+      trialEndDate: _isTrial ? _trialEndDate : null,
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      reminderEnabled: _reminderEnabled,
+      reminderDaysBefore: _reminderDaysBefore,
     );
 
     try {
       await provider.addOrUpdate(subscription);
-      if (mounted) {
-        Navigator.pop(context, true);
-      }
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -101,14 +127,34 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Name (e.g. Spotify)'),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a name';
-                }
-                return null;
-              },
+              validator: (value) => (value == null || value.trim().isEmpty) ? 'Please enter a name' : null,
             ),
             const SizedBox(height: 16),
+
+            // ---- Logo color picker ----
+            const Text('Logo color', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              children: kAvatarColors.map((c) {
+                final selected = c == _selectedColor;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedColor = c),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Color(c),
+                      shape: BoxShape.circle,
+                      border: selected ? Border.all(color: Colors.black87, width: 2.5) : null,
+                    ),
+                    child: selected ? const Icon(Icons.check, color: Colors.white, size: 18) : null,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+
             TextFormField(
               controller: _costController,
               decoration: const InputDecoration(labelText: 'Cost', prefixText: '\$ '),
@@ -132,9 +178,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             DropdownButtonFormField<String>(
               initialValue: _selectedCategory,
               decoration: const InputDecoration(labelText: 'Category'),
-              items: kCategories
-                  .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
-                  .toList(),
+              items: kCategories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
               onChanged: (value) => setState(() => _selectedCategory = value!),
             ),
             const SizedBox(height: 16),
@@ -142,11 +186,52 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               onTap: _pickDate,
               child: InputDecorator(
                 decoration: const InputDecoration(labelText: 'Next renewal date'),
-                child: Text(
-                  '${_nextRenewal.year}-${_nextRenewal.month.toString().padLeft(2, '0')}-${_nextRenewal.day.toString().padLeft(2, '0')}',
-                ),
+                child: Text(_formatDate(_nextRenewal)),
               ),
             ),
+            const SizedBox(height: 16),
+
+            // ---- Free trial ----
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('This is a free trial'),
+              value: _isTrial,
+              onChanged: (v) => setState(() => _isTrial = v),
+            ),
+            if (_isTrial)
+              InkWell(
+                onTap: _pickTrialEndDate,
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Trial ends on'),
+                  child: Text(_trialEndDate != null ? _formatDate(_trialEndDate!) : 'Select a date'),
+                ),
+              ),
+            const SizedBox(height: 16),
+
+            TextFormField(
+              controller: _notesController,
+              decoration: const InputDecoration(labelText: 'Notes (optional)'),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+
+            // ---- Reminder preferences ----
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Remind me before renewal'),
+              value: _reminderEnabled,
+              onChanged: (v) => setState(() => _reminderEnabled = v),
+            ),
+            if (_reminderEnabled)
+              DropdownButtonFormField<int>(
+                initialValue: _reminderDaysBefore,
+                decoration: const InputDecoration(labelText: 'Remind me (days before)'),
+                items: [1, 2, 3, 5, 7]
+                    .map((d) => DropdownMenuItem(value: d, child: Text('$d day${d == 1 ? '' : 's'} before')))
+                    .toList(),
+                onChanged: (v) => setState(() => _reminderDaysBefore = v!),
+              ),
+
             const SizedBox(height: 28),
             FilledButton(
               onPressed: _isSaving ? null : _save,

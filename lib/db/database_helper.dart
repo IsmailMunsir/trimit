@@ -20,7 +20,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'trimit.db');
     return openDatabase(
       path,
-      version: 2, // bumped from 1 — triggers onUpgrade for existing installs
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE subscriptions (
@@ -33,7 +33,6 @@ class DatabaseHelper {
             colorValue INTEGER NOT NULL DEFAULT ${0xFF3D5AFE},
             isTrial INTEGER NOT NULL DEFAULT 0,
             trialEndDate TEXT,
-            paymentMethod TEXT,
             notes TEXT,
             reminderEnabled INTEGER NOT NULL DEFAULT 1,
             reminderDaysBefore INTEGER NOT NULL DEFAULT 2
@@ -52,11 +51,13 @@ class DatabaseHelper {
       onUpgrade: (db, oldVersion, newVersion) async {
         // Adds the new columns to anyone who already has version 1 installed,
         // so their existing subscriptions are preserved rather than wiped.
+        // Note: paymentMethod is intentionally NOT added here anymore — the
+        // feature was removed. Any device that already has that column from
+        // an earlier test build just keeps it, unused; it's harmless.
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE subscriptions ADD COLUMN colorValue INTEGER NOT NULL DEFAULT ${0xFF3D5AFE}');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN isTrial INTEGER NOT NULL DEFAULT 0');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN trialEndDate TEXT');
-          await db.execute('ALTER TABLE subscriptions ADD COLUMN paymentMethod TEXT');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN notes TEXT');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 1');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN reminderDaysBefore INTEGER NOT NULL DEFAULT 2');
@@ -76,7 +77,6 @@ class DatabaseHelper {
       'colorValue': s.colorValue,
       'isTrial': s.isTrial ? 1 : 0,
       'trialEndDate': s.trialEndDate?.toIso8601String(),
-      'paymentMethod': s.paymentMethod,
       'notes': s.notes,
       'reminderEnabled': s.reminderEnabled ? 1 : 0,
       'reminderDaysBefore': s.reminderDaysBefore,
@@ -94,7 +94,6 @@ class DatabaseHelper {
       colorValue: map['colorValue'] as int? ?? 0xFF3D5AFE,
       isTrial: (map['isTrial'] as int? ?? 0) == 1,
       trialEndDate: map['trialEndDate'] != null ? DateTime.parse(map['trialEndDate'] as String) : null,
-      paymentMethod: map['paymentMethod'] as String?,
       notes: map['notes'] as String?,
       reminderEnabled: (map['reminderEnabled'] as int? ?? 1) == 1,
       reminderDaysBefore: map['reminderDaysBefore'] as int? ?? 2,

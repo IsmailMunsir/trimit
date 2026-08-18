@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/subscription.dart';
-import '../db/database_helper.dart';
+import '../providers/subscription_provider.dart';
 import 'add_subscription_screen.dart';
 
 class SubscriptionDetailScreen extends StatelessWidget {
@@ -9,6 +10,10 @@ class SubscriptionDetailScreen extends StatelessWidget {
   const SubscriptionDetailScreen({super.key, required this.subscription});
 
   Future<void> _confirmDelete(BuildContext context) async {
+    // Grab this before any await in the function, so nothing after
+    // an async gap touches context to obtain it.
+    final provider = context.read<SubscriptionProvider>();
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -28,9 +33,9 @@ class SubscriptionDetailScreen extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      await DatabaseHelper.instance.deleteSubscription(subscription.id);
+      await provider.delete(subscription.id);
       if (context.mounted) {
-        Navigator.pop(context, true); // tell home screen to refresh
+        Navigator.pop(context, true);
       }
     }
   }
@@ -51,7 +56,7 @@ class SubscriptionDetailScreen extends StatelessWidget {
                 ),
               );
               if (result == true && context.mounted) {
-                Navigator.pop(context, true); // also refresh the home screen behind this one
+                Navigator.pop(context, true);
               }
             },
           ),

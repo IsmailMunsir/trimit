@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/subscription.dart';
-import '../db/database_helper.dart';
+import '../providers/subscription_provider.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
-  final Subscription? existing; // null when adding new, non-null when editing
+  final Subscription? existing;
 
   const AddSubscriptionScreen({super.key, this.existing});
 
@@ -20,6 +21,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   late BillingCycle _selectedCycle;
   late String _selectedCategory;
   late DateTime _nextRenewal;
+  bool _isSaving = false;
 
   bool get _isEditing => widget.existing != null;
 
@@ -58,6 +60,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _isSaving = true);
+
+    final provider = context.read<SubscriptionProvider>();
+
     final subscription = Subscription(
       id: widget.existing?.id ?? const Uuid().v4(),
       name: _nameController.text.trim(),
@@ -67,10 +73,19 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       nextRenewal: _nextRenewal,
     );
 
-    await DatabaseHelper.instance.insertSubscription(subscription);
-
-    if (mounted) {
-      Navigator.pop(context, true);
+    try {
+      await provider.addOrUpdate(subscription);
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -134,9 +149,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             ),
             const SizedBox(height: 28),
             FilledButton(
-              onPressed: _save,
+              onPressed: _isSaving ? null : _save,
               style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-              child: Text(_isEditing ? 'Save Changes' : 'Save Subscription'),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(_isEditing ? 'Save Changes' : 'Save Subscription'),
             ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'models/subscription.dart';
 import 'providers/subscription_provider.dart';
+import 'providers/wallet_provider.dart';
 import 'theme/app_theme.dart';
 import 'widgets/subscription_card.dart';
 import 'widgets/summary_card.dart';
@@ -24,6 +25,7 @@ class TrimItApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => SubscriptionProvider()..loadSubscriptions()),
+        ChangeNotifierProvider(create: (context) => WalletProvider()..loadWallets()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
       ],
       child: MaterialApp(
@@ -55,8 +57,6 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<SubscriptionProvider>();
-    // Archived items are hidden from the main dashboard — they live in the
-    // dedicated Archive screen instead, reachable from Settings.
     final visibleSubs = provider.subscriptions.where((s) => !s.isArchived).toList();
     final visibleTotal = visibleSubs.fold(0.0, (sum, s) => sum + s.monthlyCost);
 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/subscription.dart';
 import '../providers/subscription_provider.dart';
+import '../providers/wallet_provider.dart';
 import '../utils/service_icons.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   late int _reminderDaysBefore;
   late SubscriptionStatus _selectedStatus;
   late bool _isFavorite;
+  String? _selectedWalletId;
   bool _isSaving = false;
 
   bool _colorWasAutoDetected = false;
@@ -55,6 +57,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     _reminderDaysBefore = existing?.reminderDaysBefore ?? 2;
     _selectedStatus = existing?.status ?? SubscriptionStatus.active;
     _isFavorite = existing?.isFavorite ?? false;
+    _selectedWalletId = existing?.walletId;
 
     if (!_isEditing) {
       _nameController.addListener(_onNameChanged);
@@ -143,6 +146,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       status: _selectedStatus,
       isFavorite: _isFavorite,
       isArchived: widget.existing?.isArchived ?? false,
+      walletId: _selectedWalletId,
     );
 
     try {
@@ -159,6 +163,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final wallets = context.watch<WalletProvider>().wallets;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Subscription' : 'Add Subscription'),
@@ -244,6 +250,19 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               onChanged: (value) => setState(() => _selectedStatus = value!),
             ),
             const SizedBox(height: 16),
+
+            // ---- Wallet picker ----
+            DropdownButtonFormField<String?>(
+              initialValue: _selectedWalletId,
+              decoration: const InputDecoration(labelText: 'Wallet (optional)'),
+              items: [
+                const DropdownMenuItem<String?>(value: null, child: Text('No wallet')),
+                ...wallets.map((w) => DropdownMenuItem<String?>(value: w.id, child: Text(w.name))),
+              ],
+              onChanged: (value) => setState(() => _selectedWalletId = value),
+            ),
+            const SizedBox(height: 16),
+
             InkWell(
               onTap: _pickDate,
               child: InputDecorator(

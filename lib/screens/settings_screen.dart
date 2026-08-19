@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'favorites_screen.dart';
 import 'archive_screen.dart';
+import 'wallets_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -12,6 +13,15 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
+          _SettingsTile(
+            icon: Icons.account_balance_wallet_outlined,
+            iconColor: Colors.blue,
+            label: 'Wallets',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const WalletsScreen()),
+            ),
+          ),
           _SettingsTile(
             icon: Icons.star_outline,
             iconColor: Colors.amber,

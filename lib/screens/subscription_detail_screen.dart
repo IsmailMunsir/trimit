@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../providers/subscription_provider.dart';
 import 'add_subscription_screen.dart';
+import 'payment_history_screen.dart';
 
 class SubscriptionDetailScreen extends StatelessWidget {
   final Subscription subscription;
@@ -146,6 +147,19 @@ class SubscriptionDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PaymentHistoryScreen(subscription: subscription)),
+              ),
+              icon: const Icon(Icons.receipt_long_outlined),
+              label: const Text('View Payment History'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                minimumSize: const Size(double.infinity, 0),
+              ),
+            ),
           ],
         ),
       ),

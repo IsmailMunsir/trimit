@@ -18,6 +18,7 @@ class Subscription {
   final SubscriptionStatus status;
   final bool isFavorite;
   final bool isArchived;
+  final String? walletId; // null means "no wallet assigned"
 
   Subscription({
     required this.id,
@@ -35,6 +36,7 @@ class Subscription {
     this.status = SubscriptionStatus.active,
     this.isFavorite = false,
     this.isArchived = false,
+    this.walletId,
   });
 
   /// Converts any billing cycle into an equivalent monthly cost,
@@ -65,6 +67,8 @@ class Subscription {
     SubscriptionStatus? status,
     bool? isFavorite,
     bool? isArchived,
+    String? walletId,
+    bool clearWalletId = false,
   }) {
     return Subscription(
       id: id,
@@ -82,6 +86,7 @@ class Subscription {
       status: status ?? this.status,
       isFavorite: isFavorite ?? this.isFavorite,
       isArchived: isArchived ?? this.isArchived,
+      walletId: clearWalletId ? null : (walletId ?? this.walletId),
     );
   }
 }

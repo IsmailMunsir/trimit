@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/subscription.dart';
 import '../models/user.dart';
+import '../models/wallet.dart';
 
 class DatabaseHelper {
   DatabaseHelper._internal();
@@ -20,7 +21,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'trimit.db');
     return openDatabase(
       path,
-      version: 3, // bumped from 2 — adds status, isFavorite, isArchived
+      version: 4, // bumped from 3 — adds wallets table and walletId column
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE subscriptions (
@@ -38,7 +39,8 @@ class DatabaseHelper {
             reminderDaysBefore INTEGER NOT NULL DEFAULT 2,
             status INTEGER NOT NULL DEFAULT 0,
             isFavorite INTEGER NOT NULL DEFAULT 0,
-            isArchived INTEGER NOT NULL DEFAULT 0
+            isArchived INTEGER NOT NULL DEFAULT 0,
+            walletId TEXT
           )
         ''');
         await db.execute('''
@@ -48,6 +50,13 @@ class DatabaseHelper {
             email TEXT NOT NULL UNIQUE,
             passwordHash TEXT NOT NULL,
             emailVerified INTEGER NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE wallets (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            colorValue INTEGER NOT NULL DEFAULT ${0xFF3D5AFE}
           )
         ''');
       },
@@ -64,6 +73,16 @@ class DatabaseHelper {
           await db.execute('ALTER TABLE subscriptions ADD COLUMN status INTEGER NOT NULL DEFAULT 0');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN isFavorite INTEGER NOT NULL DEFAULT 0');
           await db.execute('ALTER TABLE subscriptions ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0');
+        }
+        if (oldVersion < 4) {
+          await db.execute('ALTER TABLE subscriptions ADD COLUMN walletId TEXT');
+          await db.execute('''
+            CREATE TABLE wallets (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              colorValue INTEGER NOT NULL DEFAULT ${0xFF3D5AFE}
+            )
+          ''');
         }
       },
     );
@@ -86,6 +105,7 @@ class DatabaseHelper {
       'status': s.status.index,
       'isFavorite': s.isFavorite ? 1 : 0,
       'isArchived': s.isArchived ? 1 : 0,
+      'walletId': s.walletId,
     };
   }
 
@@ -106,6 +126,7 @@ class DatabaseHelper {
       status: SubscriptionStatus.values[map['status'] as int? ?? 0],
       isFavorite: (map['isFavorite'] as int? ?? 0) == 1,
       isArchived: (map['isArchived'] as int? ?? 0) == 1,
+      walletId: map['walletId'] as String?,
     );
   }
 
@@ -127,6 +148,26 @@ class DatabaseHelper {
   Future<void> deleteSubscription(String id) async {
     final db = await database;
     await db.delete('subscriptions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---- Wallet methods ----
+
+  Future<void> insertWallet(Wallet w) async {
+    final db = await database;
+    await db.insert('wallets', w.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Wallet>> getAllWallets() async {
+    final db = await database;
+    final rows = await db.query('wallets', orderBy: 'name ASC');
+    return rows.map((row) => Wallet.fromMap(row)).toList();
+  }
+
+  Future<void> deleteWallet(String id) async {
+    final db = await database;
+    await db.delete('wallets', where: 'id = ?', whereArgs: [id]);
+    // Any subscriptions pointing at this wallet are un-assigned, not deleted.
+    await db.rawUpdate('UPDATE subscriptions SET walletId = NULL WHERE walletId = ?', [id]);
   }
 
   // ---- User / authentication methods ----

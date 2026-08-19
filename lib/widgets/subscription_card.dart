@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
+import '../utils/service_icons.dart';
 
 class SubscriptionCard extends StatelessWidget {
   final Subscription subscription;
@@ -10,6 +11,7 @@ class SubscriptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final daysLeft = subscription.nextRenewal.difference(DateTime.now()).inDays;
+    final known = findKnownService(subscription.name);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -20,33 +22,47 @@ class SubscriptionCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // A colored circle showing the first letter of the subscription name
+              // Shows the real brand icon (via simple_icons) when the name
+              // matches a known service; otherwise falls back to a colored
+              // circle with the subscription's first letter.
               Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                  color: Color(subscription.colorValue).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  subscription.name.isNotEmpty ? subscription.name[0].toUpperCase() : '?',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
+                child: known != null
+                    ? Icon(known.iconData, color: Color(subscription.colorValue), size: 22)
+                    : Text(
+                        subscription.name.isNotEmpty ? subscription.name[0].toUpperCase() : '?',
+                        style: TextStyle(
+                          color: Color(subscription.colorValue),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
               ),
               const SizedBox(width: 14),
-              // Name and renewal countdown
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      subscription.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            subscription.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                          ),
+                        ),
+                        if (subscription.isFavorite) ...[
+                          const SizedBox(width: 4),
+                          const Icon(Icons.star, size: 14, color: Colors.amber),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -59,7 +75,6 @@ class SubscriptionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Price
               Text(
                 '\$${subscription.cost.toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),

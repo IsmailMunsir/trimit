@@ -43,8 +43,6 @@ class HomeScreen extends StatelessWidget {
       context,
       MaterialPageRoute(builder: (context) => const AddSubscriptionScreen()),
     );
-    // No manual reload needed anymore — addOrUpdate() inside the provider
-    // already calls notifyListeners(), so this screen rebuilds automatically.
   }
 
   Future<void> _openDetailScreen(BuildContext context, Subscription s) async {
@@ -56,8 +54,11 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // context.watch<...>() means "rebuild this screen whenever the provider changes"
     final provider = context.watch<SubscriptionProvider>();
+    // Archived items are hidden from the main dashboard — they live in the
+    // dedicated Archive screen instead, reachable from Settings.
+    final visibleSubs = provider.subscriptions.where((s) => !s.isArchived).toList();
+    final visibleTotal = visibleSubs.fold(0.0, (sum, s) => sum + s.monthlyCost);
 
     return Scaffold(
       appBar: AppBar(
@@ -90,14 +91,14 @@ class HomeScreen extends StatelessWidget {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                SummaryCard(totalMonthly: provider.totalMonthly),
+                SummaryCard(totalMonthly: visibleTotal),
                 const SizedBox(height: 20),
                 const Text(
                   'Your subscriptions',
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
                 ),
                 const SizedBox(height: 8),
-                if (provider.subscriptions.isEmpty)
+                if (visibleSubs.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 50),
                     child: Column(
@@ -117,7 +118,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   )
                 else
-                  ...provider.subscriptions.map((s) => SubscriptionCard(
+                  ...visibleSubs.map((s) => SubscriptionCard(
                         subscription: s,
                         onTap: () => _openDetailScreen(context, s),
                       )),

@@ -28,7 +28,8 @@ class _AllSubscriptionsScreenState extends State<AllSubscriptionsScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<SubscriptionProvider>();
-    final allSubs = provider.subscriptions;
+    // Archived items live in the dedicated Archive screen, not here.
+    final allSubs = provider.subscriptions.where((s) => !s.isArchived).toList();
     final filtered = _applyFilters(allSubs);
 
     final categories = allSubs.map((s) => s.category).toSet().toList()..sort();

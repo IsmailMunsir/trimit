@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'placeholder_screen.dart';
 import 'all_subscriptions_screen.dart';
+import 'settings_screen.dart';
 import '../main.dart' show HomeScreen;
 import '../widgets/custom_nav_bar.dart';
 
@@ -19,7 +20,7 @@ class _MainShellState extends State<MainShell> {
     AllSubscriptionsScreen(),
     PlaceholderScreen(title: 'Calendar', icon: Icons.calendar_month_outlined),
     PlaceholderScreen(title: 'Analytics', icon: Icons.bar_chart_outlined),
-    PlaceholderScreen(title: 'Settings', icon: Icons.settings_outlined),
+    SettingsScreen(),
   ];
 
   final List<NavItem> _navItems = const [

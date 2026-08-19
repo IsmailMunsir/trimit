@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/subscription.dart';
 import '../providers/subscription_provider.dart';
+import '../utils/service_icons.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? existing;
@@ -27,7 +28,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   DateTime? _trialEndDate;
   late bool _reminderEnabled;
   late int _reminderDaysBefore;
+  late SubscriptionStatus _selectedStatus;
+  late bool _isFavorite;
   bool _isSaving = false;
+
+  bool _colorWasAutoDetected = false;
 
   bool get _isEditing => widget.existing != null;
 
@@ -48,10 +53,31 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     _trialEndDate = existing?.trialEndDate;
     _reminderEnabled = existing?.reminderEnabled ?? true;
     _reminderDaysBefore = existing?.reminderDaysBefore ?? 2;
+    _selectedStatus = existing?.status ?? SubscriptionStatus.active;
+    _isFavorite = existing?.isFavorite ?? false;
+
+    if (!_isEditing) {
+      _nameController.addListener(_onNameChanged);
+    }
+  }
+
+  void _onNameChanged() {
+    final match = findKnownService(_nameController.text);
+    if (match != null) {
+      setState(() {
+        _selectedColor = match.colorValue;
+        _colorWasAutoDetected = true;
+      });
+    } else if (_colorWasAutoDetected) {
+      setState(() {
+        _colorWasAutoDetected = false;
+      });
+    }
   }
 
   @override
   void dispose() {
+    _nameController.removeListener(_onNameChanged);
     _nameController.dispose();
     _costController.dispose();
     _notesController.dispose();
@@ -81,6 +107,19 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   String _formatDate(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  String _statusLabel(SubscriptionStatus s) {
+    switch (s) {
+      case SubscriptionStatus.active:
+        return 'Active';
+      case SubscriptionStatus.trial:
+        return 'Trial';
+      case SubscriptionStatus.paused:
+        return 'Paused';
+      case SubscriptionStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -101,6 +140,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       reminderEnabled: _reminderEnabled,
       reminderDaysBefore: _reminderDaysBefore,
+      status: _selectedStatus,
+      isFavorite: _isFavorite,
+      isArchived: widget.existing?.isArchived ?? false,
     );
 
     try {
@@ -118,7 +160,15 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Subscription' : 'Add Subscription')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edit Subscription' : 'Add Subscription'),
+        actions: [
+          IconButton(
+            icon: Icon(_isFavorite ? Icons.star : Icons.star_border, color: _isFavorite ? Colors.amber : null),
+            onPressed: () => setState(() => _isFavorite = !_isFavorite),
+          ),
+        ],
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -139,7 +189,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               children: kAvatarColors.map((c) {
                 final selected = c == _selectedColor;
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedColor = c),
+                  onTap: () => setState(() {
+                    _selectedColor = c;
+                    _colorWasAutoDetected = false;
+                  }),
                   child: Container(
                     width: 36,
                     height: 36,
@@ -180,6 +233,15 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               decoration: const InputDecoration(labelText: 'Category'),
               items: kCategories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
               onChanged: (value) => setState(() => _selectedCategory = value!),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<SubscriptionStatus>(
+              initialValue: _selectedStatus,
+              decoration: const InputDecoration(labelText: 'Status'),
+              items: SubscriptionStatus.values
+                  .map((s) => DropdownMenuItem(value: s, child: Text(_statusLabel(s))))
+                  .toList(),
+              onChanged: (value) => setState(() => _selectedStatus = value!),
             ),
             const SizedBox(height: 16),
             InkWell(

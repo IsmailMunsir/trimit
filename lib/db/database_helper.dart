@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import '../models/subscription.dart';
 import '../models/user.dart';
 import '../models/wallet.dart';
+import '../models/payment_record.dart';
 
 class DatabaseHelper {
   DatabaseHelper._internal();
@@ -21,7 +22,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'trimit.db');
     return openDatabase(
       path,
-      version: 4, // bumped from 3 — adds wallets table and walletId column
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE subscriptions (
@@ -59,6 +60,15 @@ class DatabaseHelper {
             colorValue INTEGER NOT NULL DEFAULT ${0xFF3D5AFE}
           )
         ''');
+        await db.execute('''
+          CREATE TABLE payment_records (
+            id TEXT PRIMARY KEY,
+            subscriptionId TEXT NOT NULL,
+            subscriptionName TEXT NOT NULL,
+            amount REAL NOT NULL,
+            paidOn TEXT NOT NULL
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -81,6 +91,17 @@ class DatabaseHelper {
               id TEXT PRIMARY KEY,
               name TEXT NOT NULL,
               colorValue INTEGER NOT NULL DEFAULT ${0xFF3D5AFE}
+            )
+          ''');
+        }
+        if (oldVersion < 5) {
+          await db.execute('''
+            CREATE TABLE payment_records (
+              id TEXT PRIMARY KEY,
+              subscriptionId TEXT NOT NULL,
+              subscriptionName TEXT NOT NULL,
+              amount REAL NOT NULL,
+              paidOn TEXT NOT NULL
             )
           ''');
         }
@@ -166,8 +187,31 @@ class DatabaseHelper {
   Future<void> deleteWallet(String id) async {
     final db = await database;
     await db.delete('wallets', where: 'id = ?', whereArgs: [id]);
-    // Any subscriptions pointing at this wallet are un-assigned, not deleted.
     await db.rawUpdate('UPDATE subscriptions SET walletId = NULL WHERE walletId = ?', [id]);
+  }
+
+  // ---- Payment record methods ----
+
+  Future<void> insertPaymentRecord(PaymentRecord p) async {
+    final db = await database;
+    await db.insert('payment_records', p.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<PaymentRecord>> getPaymentHistoryFor(String subscriptionId) async {
+    final db = await database;
+    final rows = await db.query(
+      'payment_records',
+      where: 'subscriptionId = ?',
+      whereArgs: [subscriptionId],
+      orderBy: 'paidOn DESC',
+    );
+    return rows.map((row) => PaymentRecord.fromMap(row)).toList();
+  }
+
+  Future<List<PaymentRecord>> getAllPaymentRecords() async {
+    final db = await database;
+    final rows = await db.query('payment_records', orderBy: 'paidOn DESC');
+    return rows.map((row) => PaymentRecord.fromMap(row)).toList();
   }
 
   // ---- User / authentication methods ----

@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../models/subscription.dart';
 import '../models/payment_record.dart';
 import '../db/database_helper.dart';
+import '../services/notification_service.dart';
 
 /// Central hub for all subscription data.
 /// Every screen that needs subscriptions reads from here instead of
@@ -35,8 +36,24 @@ class SubscriptionProvider extends ChangeNotifier {
     // data loads, so it stays current without any manual step.
     await _processDuePayments();
 
+    // Keep every subscription's scheduled notifications in sync with its
+    // current data (renewal date may have just moved from the processing
+    // above, reminder settings may have changed elsewhere, etc.).
+    await _rescheduleAllNotifications();
+
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> _rescheduleAllNotifications() async {
+    for (final s in _subscriptions) {
+      if (s.isArchived) {
+        await NotificationService.instance.cancelAllForSubscription(s.id);
+        continue;
+      }
+      await NotificationService.instance.scheduleRenewalReminder(s);
+      await NotificationService.instance.scheduleTrialExpiryAlert(s);
+    }
   }
 
   Future<void> _processDuePayments() async {
@@ -100,11 +117,18 @@ class SubscriptionProvider extends ChangeNotifier {
 
   Future<void> addOrUpdate(Subscription subscription) async {
     await DatabaseHelper.instance.insertSubscription(subscription);
+    if (subscription.isArchived) {
+      await NotificationService.instance.cancelAllForSubscription(subscription.id);
+    } else {
+      await NotificationService.instance.scheduleRenewalReminder(subscription);
+      await NotificationService.instance.scheduleTrialExpiryAlert(subscription);
+    }
     await loadSubscriptions();
   }
 
   Future<void> delete(String id) async {
     await DatabaseHelper.instance.deleteSubscription(id);
+    await NotificationService.instance.cancelAllForSubscription(id);
     await loadSubscriptions();
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/currency_provider.dart';
+import '../providers/spending_limit_provider.dart';
 import 'favorites_screen.dart';
 import 'archive_screen.dart';
 import 'wallets_screen.dart';
 import 'currency_settings_screen.dart';
+import 'spending_limit_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -12,6 +14,11 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currency = context.watch<CurrencyProvider>().currency;
+    final currencyProvider = context.watch<CurrencyProvider>();
+    final limit = context.watch<SpendingLimitProvider>().limit;
+    final limitText = limit != null
+        ? '${currency.symbol}${currencyProvider.convert(limit).toStringAsFixed(0)}'
+        : 'Off';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -52,6 +59,16 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const CurrencySettingsScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.notifications_active_outlined,
+            iconColor: Colors.deepPurple,
+            label: 'Spending Limit Alert',
+            trailingText: limitText,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SpendingLimitScreen()),
             ),
           ),
           // More settings (Profile, Backup & Restore, Privacy, Theme, Help)

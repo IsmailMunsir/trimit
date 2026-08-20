@@ -4,6 +4,8 @@ import 'models/subscription.dart';
 import 'providers/subscription_provider.dart';
 import 'providers/wallet_provider.dart';
 import 'providers/currency_provider.dart';
+import 'providers/spending_limit_provider.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/subscription_card.dart';
 import 'widgets/summary_card.dart';
@@ -14,7 +16,9 @@ import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.instance.init();
   runApp(const TrimItApp());
 }
 
@@ -28,6 +32,7 @@ class TrimItApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => SubscriptionProvider()..loadSubscriptions()),
         ChangeNotifierProvider(create: (context) => WalletProvider()..loadWallets()),
         ChangeNotifierProvider(create: (context) => CurrencyProvider()..load()),
+        ChangeNotifierProvider(create: (context) => SpendingLimitProvider()..load()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
       ],
       child: MaterialApp(
@@ -39,8 +44,15 @@ class TrimItApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _limitCheckDone = false;
 
   Future<void> _openAddScreen(BuildContext context) async {
     await Navigator.push(
@@ -56,11 +68,34 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _maybeWarnSpendingLimit(double visibleTotal) async {
+    if (_limitCheckDone) return;
+    _limitCheckDone = true;
+
+    final limitProvider = context.read<SpendingLimitProvider>();
+    final currencyProvider = context.read<CurrencyProvider>();
+
+    final shouldWarn = await limitProvider.shouldWarn(visibleTotal);
+    if (shouldWarn) {
+      await NotificationService.instance.showSpendingLimitWarning(
+        currencyProvider.convert(visibleTotal),
+        currencyProvider.convert(limitProvider.limit!),
+        currencyProvider.currency.symbol,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<SubscriptionProvider>();
     final visibleSubs = provider.subscriptions.where((s) => !s.isArchived).toList();
     final visibleTotal = visibleSubs.fold(0.0, (sum, s) => sum + s.monthlyCost);
+
+    if (!provider.isLoading) {
+      // Fire-and-forget: check once per screen build cycle after data has
+      // loaded, without blocking the UI.
+      _maybeWarnSpendingLimit(visibleTotal);
+    }
 
     return Scaffold(
       appBar: AppBar(

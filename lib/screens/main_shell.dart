@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'placeholder_screen.dart';
 import 'all_subscriptions_screen.dart';
 import 'settings_screen.dart';
 import 'calendar_screen.dart';
+import 'analytics_screen.dart';
 import '../main.dart' show HomeScreen;
 import '../widgets/custom_nav_bar.dart';
 
@@ -20,7 +20,7 @@ class _MainShellState extends State<MainShell> {
     HomeScreen(),
     AllSubscriptionsScreen(),
     CalendarScreen(),
-    PlaceholderScreen(title: 'Analytics', icon: Icons.bar_chart_outlined),
+    AnalyticsScreen(),
     SettingsScreen(),
   ];
 

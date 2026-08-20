@@ -14,7 +14,9 @@ class SubscriptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final daysLeft = subscription.nextRenewal.difference(DateTime.now()).inDays;
     final known = findKnownService(subscription.name);
-    final symbol = context.watch<CurrencyProvider>().currency.symbol;
+    final currencyProvider = context.watch<CurrencyProvider>();
+    final symbol = currencyProvider.currency.symbol;
+    final convertedCost = currencyProvider.convert(subscription.cost);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -25,9 +27,6 @@ class SubscriptionCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Shows the real brand icon (via simple_icons) when the name
-              // matches a known service; otherwise falls back to a colored
-              // circle with the subscription's first letter.
               Container(
                 width: 44,
                 height: 44,
@@ -79,7 +78,7 @@ class SubscriptionCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '$symbol${subscription.cost.toStringAsFixed(2)}',
+                '$symbol${convertedCost.toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ],

@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/currency_provider.dart';
 import 'favorites_screen.dart';
 import 'archive_screen.dart';
 import 'wallets_screen.dart';
+import 'currency_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final currency = context.watch<CurrencyProvider>().currency;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -39,6 +44,16 @@ class SettingsScreen extends StatelessWidget {
               MaterialPageRoute(builder: (context) => const ArchiveScreen()),
             ),
           ),
+          _SettingsTile(
+            icon: Icons.attach_money,
+            iconColor: Colors.green,
+            label: 'Currency',
+            trailingText: currency.code,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CurrencySettingsScreen()),
+            ),
+          ),
           // More settings (Profile, Backup & Restore, Privacy, Theme, Help)
           // will be added here in later phases.
         ],
@@ -51,12 +66,14 @@ class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
   final String label;
+  final String? trailingText;
   final VoidCallback onTap;
 
   const _SettingsTile({
     required this.icon,
     this.iconColor,
     required this.label,
+    this.trailingText,
     required this.onTap,
   });
 
@@ -65,7 +82,15 @@ class _SettingsTile extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: iconColor ?? Colors.grey[700]),
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-      trailing: const Icon(Icons.chevron_right, size: 20),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (trailingText != null)
+            Text(trailingText!, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+          const SizedBox(width: 4),
+          const Icon(Icons.chevron_right, size: 20),
+        ],
+      ),
       onTap: onTap,
     );
   }

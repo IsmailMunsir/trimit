@@ -110,7 +110,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   String _formatDate(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-  String _statusLabel(SubscriptionStatus s) {
+    String _statusLabel(SubscriptionStatus s) {
     switch (s) {
       case SubscriptionStatus.active:
         return 'Active';
@@ -120,6 +120,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
         return 'Paused';
       case SubscriptionStatus.cancelled:
         return 'Cancelled';
+      case SubscriptionStatus.expired:
+        return 'Expired';
     }
   }
 

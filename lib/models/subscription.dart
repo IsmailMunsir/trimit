@@ -1,6 +1,6 @@
 enum BillingCycle { weekly, monthly, yearly }
 
-enum SubscriptionStatus { active, trial, paused, cancelled }
+enum SubscriptionStatus { active, trial, paused, cancelled, expired }
 
 class Subscription {
   final String id;

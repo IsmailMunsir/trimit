@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../utils/service_icons.dart';
+import '../providers/currency_provider.dart';
 
 class SubscriptionCard extends StatelessWidget {
   final Subscription subscription;
@@ -12,6 +14,7 @@ class SubscriptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final daysLeft = subscription.nextRenewal.difference(DateTime.now()).inDays;
     final known = findKnownService(subscription.name);
+    final symbol = context.watch<CurrencyProvider>().currency.symbol;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -76,7 +79,7 @@ class SubscriptionCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '\$${subscription.cost.toStringAsFixed(2)}',
+                '$symbol${subscription.cost.toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ],

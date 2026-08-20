@@ -1,7 +1,7 @@
 class PaymentRecord {
   final String id;
   final String subscriptionId;
-  final String subscriptionName; // stored redundantly so history survives even if the subscription is later deleted
+  final String subscriptionName; // stored redundantly so history reads fine even if the subscription is later deleted
   final double amount;
   final DateTime paidOn;
 

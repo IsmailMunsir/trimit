@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'models/subscription.dart';
 import 'providers/subscription_provider.dart';
 import 'providers/wallet_provider.dart';
+import 'providers/currency_provider.dart';
 import 'theme/app_theme.dart';
 import 'widgets/subscription_card.dart';
 import 'widgets/summary_card.dart';
@@ -26,6 +27,7 @@ class TrimItApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => SubscriptionProvider()..loadSubscriptions()),
         ChangeNotifierProvider(create: (context) => WalletProvider()..loadWallets()),
+        ChangeNotifierProvider(create: (context) => CurrencyProvider()..load()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
       ],
       child: MaterialApp(

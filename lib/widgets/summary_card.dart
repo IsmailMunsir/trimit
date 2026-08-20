@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/currency_provider.dart';
 
 class SummaryCard extends StatelessWidget {
   final double totalMonthly;
@@ -7,6 +9,8 @@ class SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final symbol = context.watch<CurrencyProvider>().currency.symbol;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -27,7 +31,7 @@ class SummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '\$${totalMonthly.toStringAsFixed(2)}',
+            '$symbol${totalMonthly.toStringAsFixed(2)}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 34,

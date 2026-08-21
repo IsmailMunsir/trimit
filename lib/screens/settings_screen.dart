@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/currency_provider.dart';
 import '../providers/spending_limit_provider.dart';
+import '../providers/auth_provider.dart';
 import 'favorites_screen.dart';
 import 'archive_screen.dart';
 import 'wallets_screen.dart';
 import 'currency_settings_screen.dart';
 import 'spending_limit_screen.dart';
+import 'privacy_security_screen.dart';
+import 'theme_settings_screen.dart';
+import 'about_screen.dart';
+import 'auth/profile_screen.dart';
+import 'auth/login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -19,12 +25,25 @@ class SettingsScreen extends StatelessWidget {
     final limitText = limit != null
         ? '${currency.symbol}${currencyProvider.convert(limit).toStringAsFixed(0)}'
         : 'Off';
+    final isLoggedIn = context.watch<AuthProvider>().isLoggedIn;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
+          _SettingsTile(
+            icon: Icons.person_outline,
+            iconColor: Colors.indigo,
+            label: isLoggedIn ? 'Profile' : 'Log in',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => isLoggedIn ? const ProfileScreen() : const LoginScreen(),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
           _SettingsTile(
             icon: Icons.account_balance_wallet_outlined,
             iconColor: Colors.blue,
@@ -71,8 +90,35 @@ class SettingsScreen extends StatelessWidget {
               MaterialPageRoute(builder: (context) => const SpendingLimitScreen()),
             ),
           ),
-          // More settings (Profile, Backup & Restore, Privacy, Theme, Help)
-          // will be added here in later phases.
+          const Divider(height: 1),
+          _SettingsTile(
+            icon: Icons.palette_outlined,
+            iconColor: Colors.pink,
+            label: 'Theme',
+            trailingText: 'Light',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ThemeSettingsScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.shield_outlined,
+            iconColor: Colors.teal,
+            label: 'Privacy & Security',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.help_outline,
+            iconColor: Colors.orange,
+            label: 'Help & About',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AboutScreen()),
+            ),
+          ),
         ],
       ),
     );

@@ -27,7 +27,8 @@ class WalletsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Wallets')),
-      floatingActionButton: FloatingActionButton(
+            floatingActionButton: FloatingActionButton(
+        heroTag: 'wallets_fab',
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const AddWalletScreen()),

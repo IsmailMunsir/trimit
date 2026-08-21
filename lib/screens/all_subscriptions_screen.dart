@@ -43,7 +43,7 @@ class _AllSubscriptionsScreenState extends State<AllSubscriptionsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('All Subscriptions')),
-      floatingActionButton: FloatingActionButton(
+            floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const AddSubscriptionScreen()),

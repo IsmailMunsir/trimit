@@ -161,7 +161,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       )),
               ],
             ),
-      floatingActionButton: FloatingActionButton(
+            floatingActionButton: FloatingActionButton(
+        heroTag: 'home_fab',
         onPressed: () => _openAddScreen(context),
         child: const Icon(Icons.add),
       ),

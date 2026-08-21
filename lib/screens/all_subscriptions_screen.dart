@@ -17,9 +17,16 @@ class _AllSubscriptionsScreenState extends State<AllSubscriptionsScreen> {
   String _query = '';
   String? _selectedCategory;
 
-  List<Subscription> _applyFilters(List<Subscription> all) {
+    List<Subscription> _applyFilters(List<Subscription> all) {
     return all.where((s) {
-      final matchesQuery = s.name.toLowerCase().contains(_query.toLowerCase());
+      final q = _query.toLowerCase();
+      // Smart search: matches against name, category, AND notes, so
+      // searching "shared with mom" (a note) or "streaming" (a category)
+      // works just as well as searching a subscription's actual name.
+      final matchesQuery = q.isEmpty ||
+          s.name.toLowerCase().contains(q) ||
+          s.category.toLowerCase().contains(q) ||
+          (s.notes?.toLowerCase().contains(q) ?? false);
       final matchesCategory = _selectedCategory == null || s.category == _selectedCategory;
       return matchesQuery && matchesCategory;
     }).toList();

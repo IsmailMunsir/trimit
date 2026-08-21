@@ -5,6 +5,8 @@ import '../providers/subscription_provider.dart';
 import '../providers/currency_provider.dart';
 import '../db/database_helper.dart';
 import '../models/payment_record.dart';
+import '../utils/duplicate_detector.dart';
+import 'duplicates_screen.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -37,8 +39,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return months[d.month - 1];
   }
 
-  /// Groups payment records into the last 6 calendar months (oldest first),
-  /// filling in $0 for any month with no recorded payments.
   List<MapEntry<DateTime, double>> _lastSixMonths(List<PaymentRecord> records) {
     final now = DateTime.now();
     final months = List.generate(6, (i) {
@@ -97,13 +97,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final categoryEntries = byCategory.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final totalMonthly = active.fold(0.0, (sum, s) => sum + s.monthlyCost);
 
-    // ---- Savings insight candidates ----
     final mostExpensive = categoryEntries.isNotEmpty ? categoryEntries.first : null;
     final trialsEndingSoon = active.where((s) {
       if (!s.isTrial || s.trialEndDate == null) return false;
       final daysAway = s.trialEndDate!.difference(DateTime.now()).inDays;
       return daysAway >= 0 && daysAway <= 7;
     }).toList();
+    final duplicateGroups = findDuplicates(subProvider.subscriptions);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Analytics')),
@@ -131,10 +131,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
           const SizedBox(height: 24),
 
-          // ---- Savings insights ----
-          if (mostExpensive != null || trialsEndingSoon.isNotEmpty) ...[
+          if (mostExpensive != null || trialsEndingSoon.isNotEmpty || duplicateGroups.isNotEmpty) ...[
             const Text('Insights', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             const SizedBox(height: 12),
+            if (duplicateGroups.isNotEmpty)
+              _InsightCard(
+                icon: Icons.content_copy,
+                color: Colors.purple,
+                text: 'Possible duplicate subscription${duplicateGroups.length == 1 ? '' : 's'} found — tap to review',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DuplicatesScreen()),
+                ),
+              ),
             if (mostExpensive != null)
               _InsightCard(
                 icon: Icons.trending_up,
@@ -150,7 +159,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             const SizedBox(height: 24),
           ],
 
-          // ---- Spending trend chart (from real payment history) ----
           const Text('Spending trend (last 6 months)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           const SizedBox(height: 16),
           FutureBuilder<List<PaymentRecord>>(
@@ -339,25 +347,31 @@ class _InsightCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String text;
+  final VoidCallback? onTap;
 
-  const _InsightCard({required this.icon, required this.color, required this.text});
+  const _InsightCard({required this.icon, required this.color, required this.text, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: TextStyle(color: color.withValues(alpha: 0.9), fontSize: 13, fontWeight: FontWeight.w600))),
-        ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 10),
+            Expanded(child: Text(text, style: TextStyle(color: color.withValues(alpha: 0.9), fontSize: 13, fontWeight: FontWeight.w600))),
+            if (onTap != null) Icon(Icons.chevron_right, color: color, size: 18),
+          ],
+        ),
       ),
     );
   }
